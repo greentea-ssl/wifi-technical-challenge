@@ -1,0 +1,19 @@
+seq=['normal', 'open', 'normal', 'open', 'normal', 'open']
+robot | switch# | recv->conn (ms, on-device)
+r1 | 1 | 1143
+r1 | 2 | 1567
+r1 | 3 | 1161
+r1 | 4 | 1563
+r1 | 5 | 1160
+r1 | 6 | 1620
+r2 | 1 | 1142
+r2 | 2 | 1578
+r2 | 3 | 1162
+r2 | 4 | 1580
+r2 | 5 | 1162
+r2 | 6 | 1560
+--- 集計 (recv->conn ms) ---
+r1: n=6 mean=1369 max=1620 min=1143 sd=215
+r2: n=6 mean=1364 max=1580 min=1142 sd=209
+全体: n=12 mean=1366ms max=1620ms min=1142ms
+done

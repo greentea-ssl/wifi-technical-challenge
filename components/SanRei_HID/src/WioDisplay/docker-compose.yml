@@ -1,0 +1,9 @@
+services:
+    build:
+      build: .
+      volumes:
+        - ./:/WioDisplay
+        - ../../libraries:/root/Arduino/libraries:ro
+        - ../../utils:/utils:ro
+      command: >
+        bash -c "chmod +x ./build.sh && ./build.sh"

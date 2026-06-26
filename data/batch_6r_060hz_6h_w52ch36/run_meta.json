@@ -1,0 +1,47 @@
+{
+  "schema": "gtnlv-run-meta/1",
+  "captured_at": "2026-06-25T03:56:22+09:00",
+  "captured_at_unix": 1782327382,
+  "host": {
+    "hostname": "raspi5",
+    "kernel": "6.18.34+rpt-rpi-2712"
+  },
+  "git": {
+    "GreenTea_NetworkLatencyViewer": null,
+    "SanRei_HID": null
+  },
+  "sync": {
+    "chrony": {
+      "Reference ID": "AC687C95 (ntp-jp.vulp.ca)",
+      "Stratum": "3",
+      "Last offset": "-0.000006126 seconds",
+      "RMS offset": "0.000307116 seconds",
+      "Frequency": "10.218 ppm slow"
+    }
+  },
+  "network": {
+    "wlan0_link": {
+      "bssid": "74:12:13:03:25:43",
+      "ssid": "TEAM_SSID",
+      "freq_mhz": "5180.0",
+      "signal": "-19 dBm"
+    },
+    "sniffer_ssid": null,
+    "interfaces": {
+      "eth1": "192.168.4.213/24",
+      "wlan0": "192.168.4.214/24",
+      "wwan0": "10.158.171.230/30"
+    }
+  },
+  "daemon": {
+    "robot_ids": "1,2,3,4,5,6",
+    "wire_span": "eth0",
+    "sniffer_port": "/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_Controller_46adfa896fd6ef11aef7694b49d2c684-if00-port0",
+    "sniffer_baud": 2000000,
+    "pps_device": "/dev/pps0",
+    "record_format": "parquet",
+    "record_dir": null,
+    "duration": 0.0
+  },
+  "conditions_note": "rx_dlb 実装後 iface=eth1"
+}

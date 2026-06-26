@@ -1,0 +1,7 @@
+services:
+    build:
+      build: .
+      volumes:
+        - ./:/ESP32C5Controller
+      command: >
+        bash -c "chmod +x ./build.sh && ./build.sh"

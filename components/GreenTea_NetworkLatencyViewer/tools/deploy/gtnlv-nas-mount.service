@@ -1,0 +1,20 @@
+[Unit]
+# GreenTea NLV — NAS (latencylog) を eth1(有線)経由でマウント。
+# 計測 WiFi(wlan0) を録画書込で汚染しないため、.100 宛を /32 で eth1 固定してから mount。
+# 認証は /etc/gtnlv-nas.cred (root 600、git 管理外)。NAS 不達でも boot を止めない。
+Description=GreenTea NLV NAS mount (latencylog over eth1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=30
+ExecStartPre=/usr/bin/mkdir -p /mnt/nas
+# .100 を eth1(有線)固定 (src=eth1 IP、DHCP予約で .231 固定前提)
+ExecStartPre=-/sbin/ip route replace 192.168.1.100/32 dev eth1 src 192.168.1.231 scope link
+ExecStart=/bin/mount -t cifs //192.168.1.100/latencylog /mnt/nas -o credentials=/etc/gtnlv-nas.cred,uid=1000,gid=1000,iocharset=utf8,vers=3.0,nofail
+ExecStop=/bin/umount -l /mnt/nas
+
+[Install]
+WantedBy=multi-user.target

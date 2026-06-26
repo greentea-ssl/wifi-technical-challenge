@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GreenTea Network Latency Viewer</title>
+  <!-- uPlot は会場 offline 対策で vendoring (tools/dashboard/fetch-vendor.sh)。
+       未取得でも charts.js が canvas fallback で描画する。 -->
+  <link rel="stylesheet" href="/static/vendor/uPlot.min.css" />
+  <!-- ?v= は Cloudflare 等のエッジキャッシュ対策 (asset 更新時に必ず数字を上げる) -->
+  <link rel="stylesheet" href="/static/style.css?v=20260531a" />
+</head>
+<body>
+  <header>
+    <h1>📡 GreenTea Network Latency Viewer</h1>
+    <span class="sub">RoboCup SSL 2026 Year 1 Radio Communications Challenge</span>
+    <span id="conn" class="badge badge-off">SSE: 接続待ち</span>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="live">🔴 Live</button>
+    <button class="tab" data-tab="overview">📊 Overview (7 項目 KPI)</button>
+    <button class="tab" data-tab="raw">🔁 Raw CSV</button>
+  </nav>
+
+  <!-- ================= Live ================= -->
+  <section id="tab-live" class="tabpanel active">
+    <div class="row">
+      <div class="card grow">
+        <div class="card-head">
+          <span id="live-status" class="status status-idle">計測中の run を探索中…</span>
+          <span id="live-now" class="mono"></span>
+        </div>
+        <!-- 網図 (Mermaid、leg 中央値ラベルを毎更新で再描画) -->
+        <div id="netdiagram" class="mermaid-box"></div>
+      </div>
+      <div class="card recctl">
+        <h3>録画制御 (NAS へ全 leg + PPS skew)</h3>
+        <div id="rec-state" class="rec-state rec-unknown">状態: 取得中…</div>
+        <div class="rec-buttons">
+          <input id="rec-tag" type="text" placeholder="tag (任意)" />
+          <button id="rec-start" class="btn btn-rec">● Start Recording</button>
+          <button id="rec-stop" class="btn btn-stop" disabled>■ Stop</button>
+        </div>
+        <label style="display:block;margin:6px 0;font-size:13px">
+          <input id="rec-pps" type="checkbox" checked /> PPS skew (ADALM2000) も記録する
+        </label>
+        <p id="rec-note" class="note">押下毎に新 run dir を NAS(/mnt/nas/gtnlv/runs/&lt;tag&gt;)へ作成。
+          rx_dl/wire/sniffer/pps を Parquet 録画 + run_meta.json(条件) + ADALM2000 PPS skew を連動記録。
+          解析: tools/owd_analyzer の leg_decomp.py / pps_bridge_owd.py(DuckDB)。</p>
+      </div>
+      <div class="card recctl">
+        <h3>sniffer 対象 AP (SSID)</h3>
+        <div class="rec-buttons">
+          <input id="snf-ssid" type="text" placeholder="SSID (例 TEAM_SSID_OPEN)" />
+          <input id="snf-pass" type="text" placeholder="password (空=open)" />
+          <button id="snf-set" class="btn btn-rec">対象 AP 切替</button>
+        </div>
+        <p id="snf-note" class="note">会場 AP に合わせて都度設定。切替で sniffer が再 associate (数秒～十数秒)。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🤖 robot 別 下り OWD (直近 60s)</h3>
+      <div id="per-robot-box"><p class="info">robot 別データ取得中…</p></div>
+    </div>
+
+    <div class="card">
+      <h3>⏱️ 総遅延 + 区間 重ね (直近 <span class="win">10</span>s, 同一時間軸, ①除く)</h3>
+      <div class="leg-title">青=total(②+③) / 橙=②AP滞留 / 緑=③air→HID</div>
+      <div id="chart-overlay" class="chart"></div>
+      <div id="overlay-key" class="mono keyline">(波形にカーソルを合わせると cycle_count / robot_id を表示)</div>
+    </div>
+
+    <div class="card">
+      <h3>📐 ① host+有線 (参考: AIPC↔RasPi 整合精度内 sub-ms)</h3>
+      <div id="chart-leg-hw" class="chart-sm"></div>
+    </div>
+
+    <div class="card">
+      <h3>⬆️ 上り OWD 区間分解 (HID gen → air → wire, 直近 <span class="win">10</span>s)<span class="sub" style="font-size:11px;color:var(--mut)"> ※ join=hid_seq(meta), CU無しでも hb で計測可</span></h3>
+      <div class="leg-title">青=total(HID gen→wire) / 橙=①HID→air(HID内部tx) / 緑=②air→wire(AP受信+有線転送)。
+        join key=hid_seq (meta, payload offset 9)。air = HID の ToDS 原送信を sniffer が観測 (AP 再送ではない)</div>
+      <div id="chart-ul" class="chart-sm"></div>
+      <div id="ul-key" class="mono keyline">(波形にカーソルを合わせると ul_seq を表示)</div>
+      <div id="ul-cards" class="metric-grid" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>📦 パケット送信状況 (直近 <span class="win">10</span>s)</h3>
+      <div id="traffic-cards" class="metric-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= Overview ================= -->
+  <section id="tab-overview" class="tabpanel">
+    <div class="card">
+      <label>Run:
+        <select id="ov-run"></select>
+      </label>
+      <button id="ov-refresh" class="btn">再計算</button>
+    </div>
+    <div class="card">
+      <h3>Year 1 Challenge 7 項目</h3>
+      <div id="kpi7" class="metric-grid"></div>
+    </div>
+    <div class="card">
+      <h3>🎯 計測系 内部精度 (PPS Δt / bridge)</h3>
+      <div id="kpi-sync" class="metric-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= Raw ================= -->
+  <section id="tab-raw" class="tabpanel">
+    <div class="card">
+      <label>Run:
+        <select id="raw-run"></select>
+      </label>
+    </div>
+    <div class="card">
+      <h3>Run 内 CSV 一覧</h3>
+      <table id="raw-table"><thead><tr><th>name</th><th>size (KB)</th><th>lines</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <script src="/static/vendor/uPlot.iife.min.js"></script>
+  <script src="/static/vendor/mermaid.min.js"></script>
+  <script src="/static/charts.js?v=20260531a"></script>
+  <script src="/static/app.js?v=20260623a"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# GreenTea Sender Control WebUI (RasPi4 load generator)
+# 配備: sudo cp gtnlv-sender.service /etc/systemd/system/
+#       sudo systemctl daemon-reload && sudo systemctl enable --now gtnlv-sender
+# 配備先: ~/gtnlv-sender/ (sender_server.py + pc_emulator.py)、venv ~/.venv-sender
+[Unit]
+Description=GreenTea Sender Control WebUI (load generator)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gochiuma
+WorkingDirectory=/home/gochiuma/gtnlv-sender
+ExecStart=/home/gochiuma/.venv-sender/bin/uvicorn sender_server:app --host 0.0.0.0 --port 8502
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

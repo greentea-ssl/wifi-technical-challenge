@@ -1,0 +1,22 @@
+# 配備 (RasPi5、gochiuma user service):
+#   mkdir -p ~/.config/systemd/user
+#   cp tools/deploy/claude-rc.service ~/.config/systemd/user/
+#   loginctl enable-linger gochiuma   # 無ログイン boot 起動の前提 (設定済)
+#   systemctl --user daemon-reload && systemctl --user enable claude-rc
+# 接続: claude.ai/code / モバイルアプリから 'raspi5-greentea'、または SSH で `tmux attach -t claude`。
+# 前提: repo dir が trust 済 (claude を一度対話起動して受諾)。
+# 注意: --continue は repo dir の「直近会話」を継続する (特定セッション固定ではない)。
+[Unit]
+Description=Claude Code (history-continue + Remote Control, in tmux) at boot
+
+[Service]
+Type=forking
+WorkingDirectory=/home/gochiuma/GreenTea_NetworkLatencyViewer
+Environment=PATH=/home/gochiuma/.local/bin:/home/gochiuma/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/tmux new-session -d -s claude -c /home/gochiuma/GreenTea_NetworkLatencyViewer "/home/gochiuma/.local/bin/claude --continue --remote-control raspi5-greentea"
+ExecStop=/usr/bin/tmux kill-session -t claude
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

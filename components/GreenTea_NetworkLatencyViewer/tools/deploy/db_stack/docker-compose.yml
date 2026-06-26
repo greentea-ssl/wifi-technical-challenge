@@ -1,0 +1,34 @@
+# GreenTea NLV — Phase2 解析 DB スタック (別マシンで起動)
+# TimescaleDB (時系列 hypertable) + Grafana (live/横断可視化)。
+# 使い方:
+#   docker compose up -d
+#   Grafana: http://<DBマシンIP>:3000  (admin/admin、初回変更)
+#   TimescaleDB: <DBマシンIP>:5432  (gtnlv/gtnlv、init.sql で schema 作成)
+# daemon から PgSink で INSERT する場合の接続先。NAS Parquet を読むだけなら DB 不要。
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: gtnlv-tsdb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gtnlv
+      POSTGRES_PASSWORD: <REDACTED>
+      POSTGRES_DB: gtnlv
+    ports:
+      - "5432:5432"
+    volumes:
+      - tsdb_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gtnlv-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - timescaledb
+volumes:
+  tsdb_data:
+  grafana_data:
