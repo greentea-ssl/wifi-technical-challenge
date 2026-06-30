@@ -40,8 +40,8 @@
 
 ## 1. Introduction
 
-In Team GreenTea, the coach (control PC) and each robot exchange commands and telemetry over
-Wi-Fi/UDP. Because latency and loss over this radio segment directly affect control performance,
+In Team GreenTea, so that the system can comply with the radio regulations of each country, the
+coach (control PC) and each robot exchange commands and telemetry over Wi-Fi/UDP. Because latency and loss over this radio segment directly affect control performance,
 this submission quantitatively reports the communication quality as the prescribed items
 (latency [the prescribed name is Round-Trip Latency, but for the reason below this submission reports one-way], packet loss, data rate, interference detection, startup time, power consumption, cost).
 This chapter states how we measure the central item, **latency**, and also lays out the structure of the document.
